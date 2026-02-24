@@ -178,6 +178,8 @@ internal static class Program
 
     private static void PrintUsage()
     {
+        Console.Error.WriteLine("Hint: Provide both an input folder and an output file path.");
+        Console.Error.WriteLine();
         Console.Error.WriteLine("Usage:");
         Console.Error.WriteLine("  FolderToBase64 <inputFolderPath> <outputFilePath>");
         Console.Error.WriteLine();
