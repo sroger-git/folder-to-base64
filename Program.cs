@@ -147,19 +147,16 @@ internal static class Program
 
         try
         {
-            step = "opening temp ZIP for reading";
-            using var zipStream = new FileStream(zipPath, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan);
-
-            step = "creating temporary output file for Base64";
-            using var outputStream = new FileStream(temporaryOutputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, BufferSize);
-
             step = "encoding ZIP bytes to Base64";
-            using var base64Transform = new ToBase64Transform();
-            using var cryptoStream = new CryptoStream(outputStream, base64Transform, CryptoStreamMode.Write, leaveOpen: true);
-
-            zipStream.CopyTo(cryptoStream, BufferSize);
-            cryptoStream.FlushFinalBlock();
-            outputStream.Flush(flushToDisk: true);
+            using (var zipStream = new FileStream(zipPath, FileMode.Open, FileAccess.Read, FileShare.Read, BufferSize, FileOptions.SequentialScan))
+            using (var outputStream = new FileStream(temporaryOutputPath, FileMode.CreateNew, FileAccess.Write, FileShare.None, BufferSize))
+            using (var base64Transform = new ToBase64Transform())
+            using (var cryptoStream = new CryptoStream(outputStream, base64Transform, CryptoStreamMode.Write))
+            {
+                zipStream.CopyTo(cryptoStream, BufferSize);
+                cryptoStream.FlushFinalBlock();
+                outputStream.Flush(flushToDisk: true);
+            }
 
             step = "moving temporary output file into final output path";
             MoveIntoPlaceWithRetries(temporaryOutputPath, outputFilePath);
