@@ -1,16 +1,38 @@
 # FolderToBase64
 
-`FolderToBase64` is a small C# console tool that:
+`FolderToBase64` is a small C# console toolset with two scripts:
 
-1. Compresses a folder into a ZIP archive.
-2. Converts the ZIP bytes into a Base64 string.
-3. Writes that Base64 output to a file.
+1. `Program.cs`: compresses a folder into ZIP bytes, then writes Base64 text to a file.
+2. `base64-to-file.cs`: reads Base64 text from a file and reconstructs the original binary file.
+
+---
+
+## Decode helper (`base64-to-file.cs`) and parameter handling
+
+`base64-to-file.cs` requires **two arguments** after `--` and validates both:
+
+- `arg0`: input Base64 file path
+- `arg1`: output file path
+
+Usage:
+
+```bash
+dotnet base64-to-file.cs -- <inputBase64File> <outputFile>
+```
+
+Example:
+
+```bash
+dotnet base64-to-file.cs -- folder-zip.b64 recovered_archive.zip
+```
+
+If arguments are missing/invalid, it prints usage and exits with a non-zero code.
 
 ---
 
 ## If you only have a `.cs` file (no `.csproj`)
 
-Use this flow when your folder contains only a source file such as `base64-to-file.cs` or `Program.cs`.
+Use this flow when your folder contains only a source file such as `Program.cs` or `base64-to-file.cs`.
 
 ### Prerequisites
 
@@ -19,21 +41,29 @@ Use this flow when your folder contains only a source file such as `base64-to-fi
 ### 1) Create a temporary console project
 
 ```bash
-dotnet new console -n FolderToBase64Runner
-cd FolderToBase64Runner
+dotnet new console -n Runner
+cd Runner
 ```
 
 ### 2) Replace generated code with your `.cs` file
-
-Copy your source file content into `Program.cs`.
-
-(Example if your file is beside this folder:)
 
 ```bash
 cp ../base64-to-file.cs Program.cs
 ```
 
+(or copy `../Program.cs` if you want folder -> Base64 behavior)
+
 ### 3) Run the tool
+
+```bash
+dotnet run -- <inputPath> <outputPath>
+```
+
+---
+
+## If you already have this repository (with `.csproj`)
+
+### Encode a folder to Base64 (`Program.cs`)
 
 ```bash
 dotnet run -- <inputFolderPath> <outputFilePath>
@@ -45,28 +75,17 @@ Example:
 dotnet run -- "../my-folder" "../output/folder.zip.b64"
 ```
 
----
+Parameters:
 
-## If you already have this repository (with `.csproj`)
+- `inputFolderPath`: folder that will be zipped and encoded.
+- `outputFilePath`: file path where the Base64 text will be written.
 
-You can run directly from this repo:
-
-```bash
-dotnet run -- <inputFolderPath> <outputFilePath>
-```
-
-Or build first:
+### Build first (optional)
 
 ```bash
 dotnet build
-dotnet run -- <inputFolderPath> <outputFilePath>
 ```
 
-### Parameters
+---
 
-- `inputFolderPath`: Folder that will be zipped and encoded.
-- `outputFilePath`: File path where the Base64 text will be written.
-
-### Helpful hint
-
-If you run the program without parameters (or with invalid parameters), it prints usage instructions and an example command.
+If you run either program without required parameters (or with invalid parameters), it prints usage instructions and exits with a non-zero exit code.
