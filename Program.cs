@@ -162,7 +162,7 @@ internal static class Program
             outputStream.Flush(flushToDisk: true);
 
             step = "moving temporary output file into final output path";
-            File.Move(temporaryOutputPath, outputFilePath, overwrite: true);
+            MoveIntoPlaceWithRetries(temporaryOutputPath, outputFilePath);
         }
         catch (IOException ex)
         {
@@ -223,6 +223,45 @@ internal static class Program
         {
             return true;
         }
+    }
+
+    private static void MoveIntoPlaceWithRetries(string temporaryOutputPath, string outputFilePath)
+    {
+        const int maxAttempts = 10;
+
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                if (File.Exists(outputFilePath) && IsFileLocked(outputFilePath))
+                {
+                    throw new IOException(
+                        $"Destination output file is locked (in use by another process): {outputFilePath}",
+                        new IOException("Sharing violation") { HResult = unchecked((int)0x80070020) });
+                }
+
+                File.Move(temporaryOutputPath, outputFilePath, overwrite: true);
+                return;
+            }
+            catch (IOException ex) when (IsSharingOrLockViolation(ex))
+            {
+                if (attempt == maxAttempts)
+                {
+                    throw;
+                }
+
+                Thread.Sleep(150 * attempt);
+            }
+        }
+    }
+
+    private static bool IsSharingOrLockViolation(IOException ex)
+    {
+        const int sharingViolation = unchecked((int)0x80070020);
+        const int lockViolation = unchecked((int)0x80070021);
+
+        return ex.HResult is sharingViolation or lockViolation ||
+               ex.InnerException is IOException inner && inner.HResult is sharingViolation or lockViolation;
     }
 
     private static bool TryDeleteFile(string path, out string? errorMessage)
